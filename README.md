@@ -1,2 +1,3 @@
 # HTTPFileShare
-A Simple CLI HTTP server written in Python to share files over the intranet
+
+HTTPFileShare is a simple Python script to quickly serve files over the intranet.
