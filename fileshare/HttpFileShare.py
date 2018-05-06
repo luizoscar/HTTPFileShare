@@ -38,10 +38,14 @@ import tempfile
 from threading import Thread
 from datetime import datetime
 
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk
+try:
+    import gi
+    gi.require_version('Gtk', '3.0')
+    gi.require_version('Gdk', '3.0')
+    from gi.repository import Gtk, Gdk
+except:
+    pass
+
 
 if sys.version_info < (3, 0):
     from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
@@ -65,7 +69,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
         if self.path.endswith(link_name):
             try:
-                print("Sending file [{0}/{1}] to {2}".format(str(cur_download + 1), max_downloads, self.client_address[0]))
+                if max_downloads > 0:
+                    print("Sending file [{0}/{1}] to {2}".format(str(cur_download + 1), max_downloads, self.client_address[0]))
+                else:
+                    print("Sending file to {0}".format(self.client_address[0]))
+                    
                 f = open(src_file, 'rb')  # open the source file
 
                 # send code 200 response
@@ -86,7 +94,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
                 # Increment the number of downloads and check if reached the limit
                 cur_download = cur_download + 1
-                if cur_download == max_downloads:
+                if max_downloads > 0 and cur_download == max_downloads:
 
                     # Disconnect the server
                     def kill_me_please(server):
@@ -295,12 +303,22 @@ def main(argv):
             show_usage()
 
     url = 'http://{0}:{1}/{2}'.format(local_ip, port, link_name)
-    clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-    clipboard.set_text(url, -1)
-    clipboard.store()
-
-    print('Sharing the file {0} - {1}'.format(src_file, to_human_size(os.stat(src_file).st_size)))
+    
+    if max_downloads > 0:
+        print('Sharing {0} times the file {1} - {2}'.format(str(max_downloads),src_file, to_human_size(os.stat(src_file).st_size)))
+    else:
+        print('Sharing unlimited times the file {0} - {1}'.format(src_file, to_human_size(os.stat(src_file).st_size)))
+        print('NOTE: The server can be stopped by pressing CTRL+C')
+        
     print('Your download link is: {}'.format(url))
+
+    try:
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        clipboard.set_text(url, -1)
+        clipboard.store()
+        print("The share URL was copied to the clipboard.")
+    except:
+        pass
 
     # Start to serve the files
     try:
